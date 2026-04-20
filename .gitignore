@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+
+# Env files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Turbo
+.turbo/
+
+# Testing
+coverage/
+e2e-results/
+playwright-report/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
