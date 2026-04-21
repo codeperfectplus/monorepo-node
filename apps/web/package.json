@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "npm_config_user_agent=npm NEXT_IGNORE_INCORRECT_LOCKFILE=1 next dev --webpack",
+    "build": "npm_config_user_agent=npm NEXT_IGNORE_INCORRECT_LOCKFILE=1 next build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "start": "next start",
     "lint": "eslint"
   },

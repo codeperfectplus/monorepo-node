@@ -1,5 +1,5 @@
 # Dockerfile for API (NestJS)
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -16,11 +16,11 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Build the monorepo
-RUN npm run build
+# Build API workspace only
+RUN npm run build:api
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
 
 WORKDIR /app
 
