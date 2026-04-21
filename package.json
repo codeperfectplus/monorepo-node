@@ -8,7 +8,16 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "test": "turbo test",
-    "test:e2e": "turbo test:e2e"
+    "test:e2e": "turbo test:e2e",
+    "db:generate": "npm run db:generate --workspace=@shared/database",
+    "db:migrate:dev": "npm run db:migrate:dev --workspace=@shared/database",
+    "db:migrate:deploy": "npm run db:migrate:deploy --workspace=@shared/database",
+    "db:push": "npm run db:push --workspace=@shared/database",
+    "db:studio": "npm run db:studio --workspace=@shared/database",
+    "db:format": "npm run db:format --workspace=@shared/database",
+    "db:validate": "npm run db:validate --workspace=@shared/database",
+    "db:up": "docker start my-monorepo-postgres >/dev/null 2>&1 || docker run -d --name my-monorepo-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres -p 51214:5432 postgres:16-alpine",
+    "db:down": "docker stop my-monorepo-postgres"
   },
   "keywords": [],
   "author": "",
