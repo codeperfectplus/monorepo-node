@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
@@ -36,6 +37,7 @@ type JwtPayload = {
   sub: string;
   email: string;
   exp: number;
+  jti?: string;
 };
 
 @Injectable()
@@ -107,17 +109,9 @@ export class AuthService {
       throw new UnauthorizedException('Missing refresh token.');
     }
 
-    const refreshSecret = this.getJwtSecret(
-      'JWT_REFRESH_SECRET',
-      'dev-refresh-secret-change-me',
-    );
+    const payload = await this.verifyRefreshToken(refreshToken);
 
-    let payload: JwtPayload;
-    try {
-      payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
-        secret: refreshSecret,
-      });
-    } catch {
+    if (!payload.jti) {
       throw new UnauthorizedException('Invalid refresh token.');
     }
 
@@ -125,23 +119,141 @@ export class AuthService {
       where: { id: payload.sub },
     });
 
-    if (!user || !user.isActive || !user.refreshTokenHash) {
+    if (!user || !user.isActive) {
       throw new UnauthorizedException('Invalid refresh token.');
     }
 
+    const refreshTokenSession = await this.prisma.refreshToken.findUnique({
+      where: { id: payload.jti },
+    });
+
     if (
-      user.refreshTokenExpiresAt &&
-      user.refreshTokenExpiresAt.getTime() <= Date.now()
+      !refreshTokenSession ||
+      refreshTokenSession.userId !== user.id ||
+      refreshTokenSession.revokedAt
     ) {
+      throw new UnauthorizedException('Invalid refresh token.');
+    }
+
+    if (refreshTokenSession.expiresAt.getTime() <= Date.now()) {
       throw new UnauthorizedException('Refresh token has expired.');
     }
 
-    const isTokenMatch = await compare(refreshToken, user.refreshTokenHash);
+    const isTokenMatch = await compare(
+      refreshToken,
+      refreshTokenSession.tokenHash,
+    );
     if (!isTokenMatch) {
       throw new UnauthorizedException('Invalid refresh token.');
     }
 
-    return this.issueTokens(user);
+    return this.issueTokens(user, {
+      rotateFromRefreshTokenId: refreshTokenSession.id,
+    });
+  }
+
+  async getSessionUser(
+    refreshToken: string | undefined,
+  ): Promise<AuthUserResponse | null> {
+    if (!refreshToken) {
+      return null;
+    }
+
+    let payload: JwtPayload;
+    try {
+      payload = await this.verifyRefreshToken(refreshToken);
+    } catch {
+      return null;
+    }
+
+    if (!payload.jti) {
+      return null;
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!user || !user.isActive) {
+      return null;
+    }
+
+    const refreshTokenSession = await this.prisma.refreshToken.findUnique({
+      where: { id: payload.jti },
+      select: {
+        userId: true,
+        tokenHash: true,
+        expiresAt: true,
+        revokedAt: true,
+      },
+    });
+
+    if (
+      !refreshTokenSession ||
+      refreshTokenSession.userId !== user.id ||
+      refreshTokenSession.revokedAt
+    ) {
+      return null;
+    }
+
+    if (refreshTokenSession.expiresAt.getTime() <= Date.now()) {
+      return null;
+    }
+
+    const isTokenMatch = await compare(
+      refreshToken,
+      refreshTokenSession.tokenHash,
+    );
+    if (!isTokenMatch) {
+      return null;
+    }
+
+    return this.toAuthUserResponse(user);
+  }
+
+  async logout(refreshToken: string | undefined): Promise<void> {
+    if (!refreshToken) {
+      return;
+    }
+
+    let payload: JwtPayload;
+    try {
+      payload = await this.verifyRefreshToken(refreshToken);
+    } catch {
+      return;
+    }
+
+    if (!payload.jti) {
+      return;
+    }
+
+    const refreshTokenSession = await this.prisma.refreshToken.findUnique({
+      where: { id: payload.jti },
+      select: {
+        id: true,
+        userId: true,
+        tokenHash: true,
+      },
+    });
+
+    if (!refreshTokenSession || refreshTokenSession.userId !== payload.sub) {
+      return;
+    }
+
+    const isTokenMatch = await compare(
+      refreshToken,
+      refreshTokenSession.tokenHash,
+    );
+    if (!isTokenMatch) {
+      return;
+    }
+
+    await this.prisma.refreshToken.deleteMany({
+      where: {
+        id: refreshTokenSession.id,
+        userId: payload.sub,
+      },
+    });
   }
 
   private signAccessToken(userId: string, email: string): Promise<string> {
@@ -149,8 +261,9 @@ export class AuthService {
       'JWT_ACCESS_SECRET',
       'dev-access-secret-change-me',
     );
-    const accessTokenExpiresIn =
-      (this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') ?? '15m') as StringValue;
+    const accessTokenExpiresIn = (this.configService.get<string>(
+      'JWT_ACCESS_EXPIRES_IN',
+    ) ?? '15m') as StringValue;
 
     return this.jwtService.signAsync(
       {
@@ -164,18 +277,24 @@ export class AuthService {
     );
   }
 
-  private signRefreshToken(userId: string, email: string): Promise<string> {
+  private signRefreshToken(
+    userId: string,
+    email: string,
+    refreshTokenId: string,
+  ): Promise<string> {
     const refreshSecret = this.getJwtSecret(
       'JWT_REFRESH_SECRET',
       'dev-refresh-secret-change-me',
     );
-    const refreshTokenExpiresIn =
-      (this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d') as StringValue;
+    const refreshTokenExpiresIn = (this.configService.get<string>(
+      'JWT_REFRESH_EXPIRES_IN',
+    ) ?? '7d') as StringValue;
 
     return this.jwtService.signAsync(
       {
         sub: userId,
         email,
+        jti: refreshTokenId,
       },
       {
         secret: refreshSecret,
@@ -184,31 +303,50 @@ export class AuthService {
     );
   }
 
-  private async issueTokens(user: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    name: string;
-    email: string;
-    isActive: boolean;
-    lastLoginAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }): Promise<AuthResponse> {
+  private async issueTokens(
+    user: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      name: string;
+      email: string;
+      isActive: boolean;
+      lastLoginAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    options?: {
+      rotateFromRefreshTokenId?: string;
+    },
+  ): Promise<AuthResponse> {
+    const refreshTokenId = randomUUID();
+
     const [accessToken, refreshToken] = await Promise.all([
       this.signAccessToken(user.id, user.email),
-      this.signRefreshToken(user.id, user.email),
+      this.signRefreshToken(user.id, user.email, refreshTokenId),
     ]);
 
     const refreshTokenHash = await hash(refreshToken, 12);
     const refreshTokenExpiresAt = this.extractTokenExpiry(refreshToken);
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        refreshTokenHash,
-        refreshTokenExpiresAt,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      if (options?.rotateFromRefreshTokenId) {
+        await tx.refreshToken.deleteMany({
+          where: {
+            id: options.rotateFromRefreshTokenId,
+            userId: user.id,
+          },
+        });
+      }
+
+      await tx.refreshToken.create({
+        data: {
+          id: refreshTokenId,
+          userId: user.id,
+          tokenHash: refreshTokenHash,
+          expiresAt: refreshTokenExpiresAt,
+        },
+      });
     });
 
     return {
@@ -223,13 +361,28 @@ export class AuthService {
   }
 
   private extractTokenExpiry(token: string): Date {
-    const decoded = this.jwtService.decode(token) as { exp?: number } | null;
+    const decoded = this.jwtService.decode<{ exp?: number }>(token);
     if (decoded?.exp) {
       return new Date(decoded.exp * 1000);
     }
 
     const fallbackExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
     return new Date(fallbackExpiry);
+  }
+
+  private async verifyRefreshToken(refreshToken: string): Promise<JwtPayload> {
+    const refreshSecret = this.getJwtSecret(
+      'JWT_REFRESH_SECRET',
+      'dev-refresh-secret-change-me',
+    );
+
+    try {
+      return await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
+        secret: refreshSecret,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token.');
+    }
   }
 
   private getJwtSecret(

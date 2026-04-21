@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { LoginDto } from './dto/login.dto';
@@ -18,7 +18,11 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const auth = await this.authService.signup(signupDto);
-    this.setRefreshTokenCookie(response, auth.refreshToken, auth.refreshTokenExpiresAt);
+    this.setRefreshTokenCookie(
+      response,
+      auth.refreshToken,
+      auth.refreshTokenExpiresAt,
+    );
 
     return {
       accessToken: auth.accessToken,
@@ -35,7 +39,11 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const auth = await this.authService.login(loginDto);
-    this.setRefreshTokenCookie(response, auth.refreshToken, auth.refreshTokenExpiresAt);
+    this.setRefreshTokenCookie(
+      response,
+      auth.refreshToken,
+      auth.refreshTokenExpiresAt,
+    );
 
     return {
       accessToken: auth.accessToken,
@@ -53,7 +61,11 @@ export class AuthController {
   ) {
     const refreshToken = request.cookies?.refreshToken as string | undefined;
     const auth = await this.authService.refresh(refreshToken);
-    this.setRefreshTokenCookie(response, auth.refreshToken, auth.refreshTokenExpiresAt);
+    this.setRefreshTokenCookie(
+      response,
+      auth.refreshToken,
+      auth.refreshTokenExpiresAt,
+    );
 
     return {
       accessToken: auth.accessToken,
@@ -64,19 +76,57 @@ export class AuthController {
     };
   }
 
+  @Post('session')
+  @HttpCode(200)
+  async session(@Req() request: Request) {
+    const refreshToken = request.cookies?.refreshToken as string | undefined;
+    const user = await this.authService.getSessionUser(refreshToken);
+
+    return {
+      authenticated: Boolean(user),
+      user,
+    };
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  async logout(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const refreshToken = request.cookies?.refreshToken as string | undefined;
+    await this.authService.logout(refreshToken);
+    this.clearRefreshTokenCookie(response);
+
+    return { success: true };
+  }
+
   private setRefreshTokenCookie(
     response: Response,
     refreshToken: string,
     refreshTokenExpiresAt: Date,
   ) {
-    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
 
     response.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'strict',
-      path: '/auth/refresh',
+      path: '/api/v1/auth',
       expires: refreshTokenExpiresAt,
+    });
+  }
+
+  private clearRefreshTokenCookie(response: Response) {
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
+
+    response.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      path: '/api/v1/auth',
     });
   }
 }

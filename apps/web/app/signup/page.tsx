@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 const API_BASE_URL =
-  (process.env.NEXT_PUBLIC_BACKEND_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
+  (process.env.NEXT_PUBLIC_BACKEND_API_URL ?? 'http://localhost:8000/api/v1').replace(/\/$/, '')
 
 type SignupResponse = {
   accessToken: string
@@ -81,6 +81,7 @@ export default function SignupPage() {
       }
 
       setResult(payload as SignupResponse)
+      window.dispatchEvent(new Event('auth:changed'))
     } catch (err) {
       setResult(null)
       setError(err instanceof Error ? err.message : 'Signup failed')
