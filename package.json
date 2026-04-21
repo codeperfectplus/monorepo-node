@@ -18,8 +18,7 @@
   "packageManager": "npm@11.11.0",
   "workspaces": [
     "apps/*",
-    "packages/*",
-    "e2e"
+    "packages/*"
   ],
   "devDependencies": {
     "turbo": "^2.9.6"
