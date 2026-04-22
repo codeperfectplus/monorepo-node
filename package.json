@@ -32,15 +32,15 @@
   "private": true,
   "packageManager": "npm@11.11.0",
   "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=10.0.0"
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
   },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "devDependencies": {
-    "@types/pg": "^8.20.0",
+    "@types/pg": "^8.11.14",
     "dotenv-cli": "^11.0.0",
     "turbo": "^2.9.6"
   },

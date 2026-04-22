@@ -1,13 +1,18 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "lastLoginAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-  - You are about to drop the column `refreshTokenExpiresAt` on the `users` table. All the data in the column will be lost.
-  - You are about to drop the column `refreshTokenHash` on the `users` table. All the data in the column will be lost.
-
-*/
--- AlterTable
-ALTER TABLE "users" DROP COLUMN "refreshTokenExpiresAt",
-DROP COLUMN "refreshTokenHash";
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "refresh_tokens" (
@@ -21,6 +26,9 @@ CREATE TABLE "refresh_tokens" (
 
     CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE INDEX "refresh_tokens_userId_idx" ON "refresh_tokens"("userId");

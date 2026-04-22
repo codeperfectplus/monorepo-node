@@ -14,6 +14,9 @@ RUN npm install
 # Copy source
 COPY . .
 
+# Generate Prisma client
+RUN npm exec --workspace=packages/database prisma generate
+
 # Build only API
 RUN npm run build:api
 
@@ -31,8 +34,7 @@ RUN npm ci
 
 # Copy built outputs
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/packages/database/dist ./packages/database/dist
-COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+COPY --from=builder /app/packages/database ./packages/database
 
 # Generate Prisma client
 RUN npm exec --workspace=packages/database prisma generate

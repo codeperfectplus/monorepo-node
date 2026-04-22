@@ -5,5 +5,12 @@ import { PrismaPg } from '@prisma/adapter-pg'
 export default defineConfig({
   earlyAccess: true,
   schema: path.join(__dirname, 'prisma/schema.prisma'),
-  adapter: () => new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
+  datasource: {
+    url: process.env.DATABASE_URL!,
+  },
+  migrate: {
+    async adapter(env) {
+      return new PrismaPg({ connectionString: env.DATABASE_URL! })
+    }
+  },
 })
