@@ -23,7 +23,6 @@ export class AuthController {
       auth.refreshToken,
       auth.refreshTokenExpiresAt,
     );
-    console.log(auth.user);
     return {
       accessToken: auth.accessToken,
       refreshToken: auth.refreshToken,

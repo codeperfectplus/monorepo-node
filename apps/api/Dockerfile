@@ -1,41 +1,43 @@
-# Dockerfile for API (NestJS)
+# ---------- BUILDER ----------
 FROM node:20-slim AS builder
-
 WORKDIR /app
 
-# Copy package files
+# Install deps (for building TS)
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
 COPY apps/web/package*.json ./apps/web/
 COPY packages/types/package*.json ./packages/types/
 COPY packages/utils/package*.json ./packages/utils/
-
-# Install dependencies
+COPY packages/database/package*.json ./packages/database/
 RUN npm install
 
-# Copy source code
+# Copy source
 COPY . .
 
-# Build API workspace only
+# Build only API
 RUN npm run build:api
 
-# Production stage
+# ---------- PRODUCTION ----------
 FROM node:20-slim AS production
-
 WORKDIR /app
 
-# Copy package files
+RUN apt-get update -y && apt-get install -y openssl
+
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
+COPY packages/database/package*.json ./packages/database/
 
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci
 
-# Copy built application
+# Copy built outputs
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/packages/database/dist ./packages/database/dist
+COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 
-# Expose port
+# Generate Prisma client
+RUN npm exec --workspace=packages/database prisma generate
+
+RUN npm prune --omit=dev
+
 EXPOSE 4000
-
-# Start the application
 CMD ["npm", "run", "start:prod", "--workspace=api"]

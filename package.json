@@ -40,7 +40,12 @@
     "packages/*"
   ],
   "devDependencies": {
+    "@types/pg": "^8.20.0",
     "dotenv-cli": "^11.0.0",
     "turbo": "^2.9.6"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
+    "pg": "^8.20.0"
   }
 }
