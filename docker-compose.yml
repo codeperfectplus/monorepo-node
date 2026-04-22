@@ -2,12 +2,18 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: postgres
+    restart: always                    # ← always restart, even after system reboot
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
-      - "5430:5432"
+      - "5432:5432"
     networks:
       - app-network
     volumes:
@@ -18,14 +24,17 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: api
+    restart: no                        # ← won't auto-restart
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
       PORT: 8000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -34,6 +43,7 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     container_name: web
+    restart: no                        # ← won't auto-restart
     ports:
       - "3000:3000"
     env_file:
@@ -42,7 +52,8 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
     depends_on:
-      - api
+      api:
+        condition: service_started
     networks:
       - app-network
 

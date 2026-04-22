@@ -62,7 +62,7 @@ Required keys in [.env](.env):
 - PORT=8000
 - FRONTEND_URL=http://localhost:3000
 - NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8000/api/v1
-- DATABASE_URL=postgresql://postgres:postgres@localhost:51214/postgres
+- DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
 - JWT_ACCESS_SECRET=...
 - JWT_ACCESS_EXPIRES_IN=15m
 - JWT_REFRESH_SECRET=...
@@ -78,7 +78,7 @@ npm install
 
 2. Ensure [.env](.env) exists and is filled.
 
-3. Start local Postgres on port 51214.
+3. Start local Postgres on port 5432.
 
 ```bash
 npm run db:up
