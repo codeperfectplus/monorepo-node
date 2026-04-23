@@ -38,7 +38,7 @@ packages/
 ### Runtime flow
 
 1. Browser opens [apps/web/app/signup/page.tsx](apps/web/app/signup/page.tsx) or [apps/web/app/login/page.tsx](apps/web/app/login/page.tsx).
-2. Web app calls API directly using NEXT_PUBLIC_BACKEND_API_URL.
+2. Web app calls API directly using BACKEND_API_URL.
 3. API handles auth in [apps/api/src/modules/auth/auth.controller.ts](apps/api/src/modules/auth/auth.controller.ts) and [apps/api/src/modules/auth/auth.service.ts](apps/api/src/modules/auth/auth.service.ts).
 4. API uses Prisma via [apps/api/src/modules/prisma/prisma.service.ts](apps/api/src/modules/prisma/prisma.service.ts), backed by schema in [packages/database/prisma/schema.prisma](packages/database/prisma/schema.prisma).
 
@@ -61,7 +61,7 @@ Required keys in [.env](.env):
 - NODE_ENV=development
 - PORT=8000
 - FRONTEND_URL=http://localhost:3000
-- NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8000/api/v1
+- BACKEND_API_URL=http://localhost:8000/api/v1
 - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
 - JWT_ACCESS_SECRET=...
 - JWT_ACCESS_EXPIRES_IN=15m

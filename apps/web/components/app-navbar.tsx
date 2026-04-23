@@ -7,7 +7,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const API_BASE_URL =
-  (process.env.NEXT_PUBLIC_BACKEND_API_URL ?? 'http://localhost:8000/api/v1').replace(/\/$/, '')
+  (process.env.BACKEND_API_URL ?? 'http://localhost:8000/api/v1').replace(/\/$/, '')
 
 type SessionResponse = {
   authenticated: boolean

@@ -41,12 +41,18 @@
     "packages/*"
   ],
   "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/multer": "^2.1.0",
     "@types/pg": "^8.11.14",
     "dotenv-cli": "^11.0.0",
     "turbo": "^2.9.6"
   },
   "dependencies": {
+    "@nestjs/event-emitter": "^3.0.1",
     "@prisma/adapter-pg": "^7.7.0",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
     "pg": "^8.20.0"
   }
 }
