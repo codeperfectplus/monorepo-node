@@ -21,7 +21,10 @@
     "db:push": "npm run db:push --workspace=@shared/database",
     "db:studio": "npm run db:studio --workspace=@shared/database",
     "db:format": "npm run db:format --workspace=@shared/database",
-    "db:validate": "npm run db:validate --workspace=@shared/database"
+    "db:validate": "npm run db:validate --workspace=@shared/database",
+    "db:up": "docker start postgres",
+    "db:down": "docker stop postgres",
+    "docker:up": "docker-compose up -d"
   },
   "keywords": [],
   "author": "",
