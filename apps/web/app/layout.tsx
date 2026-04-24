@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AppNavbar } from "../components/app-navbar";
+import { AppSidebar } from "../components/app-sidebar";
 import { AuthRefreshOnLoad } from "../components/auth-refresh-on-load";
 
 const geistSans = Geist({
@@ -29,10 +29,13 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body suppressHydrationWarning className="min-h-full flex flex-col">
+      <body suppressHydrationWarning className="h-full">
         <AuthRefreshOnLoad />
-        <AppNavbar />
-        <div className="flex-1">{children}</div>
+        <AppSidebar />
+        {/* Offset for fixed sidebar on desktop, fixed top bar on mobile */}
+        <div className="min-h-screen pt-14 lg:pl-60 lg:pt-0">
+          {children}
+        </div>
       </body>
     </html>
   );

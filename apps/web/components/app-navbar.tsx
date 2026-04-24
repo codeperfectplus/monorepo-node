@@ -116,6 +116,20 @@ export function AppNavbar() {
 
           {isSignedIn ? (
             <Link
+              href="/tokens"
+              className={cn(
+                buttonVariants({
+                  size: 'sm',
+                  variant: pathname === '/tokens' ? 'default' : 'ghost',
+                }),
+              )}
+            >
+              Tokens
+            </Link>
+          ) : null}
+
+          {isSignedIn ? (
+            <Link
               href="/admin"
               className={cn(
                 buttonVariants({
