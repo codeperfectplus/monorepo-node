@@ -12,12 +12,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
 
+import { Role } from './decorators/roles.decorator';
+
 type AuthUserResponse = {
   id: string;
   firstName: string;
   lastName: string;
   name: string;
   email: string;
+  role: Role;
   isActive: boolean;
   lastLoginAt: Date | null;
   createdAt: Date;
@@ -256,7 +259,7 @@ export class AuthService {
     });
   }
 
-  private signAccessToken(userId: string, email: string): Promise<string> {
+  private signAccessToken(userId: string, email: string, role: Role): Promise<string> {
     const accessSecret = this.getJwtSecret(
       'JWT_ACCESS_SECRET',
       'dev-access-secret-change-me',
@@ -269,6 +272,7 @@ export class AuthService {
       {
         sub: userId,
         email,
+        role,
       },
       {
         secret: accessSecret,
@@ -310,6 +314,7 @@ export class AuthService {
       lastName: string;
       name: string;
       email: string;
+      role: Role;
       isActive: boolean;
       lastLoginAt: Date | null;
       createdAt: Date;
@@ -322,7 +327,7 @@ export class AuthService {
     const refreshTokenId = randomUUID();
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.signAccessToken(user.id, user.email),
+      this.signAccessToken(user.id, user.email, user.role),
       this.signRefreshToken(user.id, user.email, refreshTokenId),
     ]);
 
@@ -407,6 +412,7 @@ export class AuthService {
     lastName: string;
     name: string;
     email: string;
+    role: Role;
     isActive: boolean;
     lastLoginAt: Date | null;
     createdAt: Date;
@@ -418,6 +424,7 @@ export class AuthService {
       lastName: user.lastName,
       name: user.name,
       email: user.email,
+      role: user.role,
       isActive: user.isActive,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,

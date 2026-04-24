@@ -7,6 +7,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
+import type { Role } from '../decorators/roles.decorator';
+
+type JwtAccessPayload = {
+  sub: string;
+  email: string;
+  role: Role;
+  exp: number;
+};
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -28,12 +36,11 @@ export class AuthGuard implements CanActivate {
       'dev-access-secret-change-me';
 
     try {
-      const payload = await this.jwtService.verifyAsync<{
-        sub: string;
-        email: string;
-        exp: number;
-      }>(token, { secret });
-      (request as Request & { user: unknown }).user = payload;
+      const payload = await this.jwtService.verifyAsync<JwtAccessPayload>(
+        token,
+        { secret },
+      );
+      (request as Request & { user: JwtAccessPayload }).user = payload;
     } catch {
       throw new UnauthorizedException('Invalid or expired access token.');
     }

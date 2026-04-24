@@ -114,6 +114,20 @@ export function AppNavbar() {
             </Link>
           ) : null}
 
+          {isSignedIn ? (
+            <Link
+              href="/admin"
+              className={cn(
+                buttonVariants({
+                  size: 'sm',
+                  variant: pathname === '/admin' ? 'default' : 'ghost',
+                }),
+              )}
+            >
+              Admin
+            </Link>
+          ) : null}
+
           {isSignedIn === false ? (
             <>
               <Link
